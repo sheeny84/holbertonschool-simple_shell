@@ -56,62 +56,73 @@ int count_words(char *str)
 	return (count);
 }
 
-void free_args(char **args)
-{
-        int count;
-
-        if (args == NULL)
-                return;
-
-        count = 0;
-        while (args[count] != NULL)
-        {
-                free(args[count]);
-                count++;
-        }
-        free(args);
-}
-
 char **split_string(char *str)
 {
 	char **words_array;
-	char *word, *str_copy;
-	int count, slot;
+	char *word, *str_copy, *copy_to_count;
+	int count, slot, free_count;
 	
-	slot = 0;
+	slot = 0, free_count = 0;
 
 	if (str == NULL)
 		return (NULL);
 
-	str_copy = strdup(str);
-	if (str_copy == NULL)
+	copy_to_count = strdup(str);
+	if (copy_to_count == NULL)
 		return (NULL);
 
-	count = count_words(str_copy);
+	count = count_words(copy_to_count);
+	free(copy_to_count);
 
 	words_array = malloc(sizeof(char *) * (count + 1));
 	if (words_array == NULL)
 		return (NULL);
 	
+	str_copy = strdup(str);
+	if (str_copy == NULL)
+	{
+		free(words_array);
+		return (NULL);
+	}
+
 	word = strtok(str_copy, " ");
 	while (word != NULL)
 	{
 		words_array[slot] = strdup(word);
 		if (words_array[slot] == NULL)
 		{
-			free_args(words_array);
+			while (free_count < slot)
+			{
+				free(words_array[free_count]);
+				free_count++;
+			}
+			free(words_array);
 			free(str_copy);
 			return (NULL);
 		}
 		slot++;
 		word = strtok(NULL, " ");
 	}
-	/* count of 0 means line was empty or all spaces */
-	if (count == 0)
-		return (NULL);
-	words_array[slot] = NULL; /* add NULL to end of array */
+
+	words_array[slot] = NULL;
 	free(str_copy);
 	return (words_array);
+}
+
+void free_args(char **args)
+{
+	int count;
+
+	if (args == NULL)
+		return;
+
+	count = 0;
+	while (args[count] != NULL)
+	{
+		free(args[count]);
+		count++;
+	}
+	free(args);
 }
 
 void execute_command(char **args)
@@ -145,7 +156,7 @@ int main(int argc, char **argv)
 {
 	char *command;
 	char **args;
-	/* int count, notallspaces; */
+	int count, notallspaces;
 	
 	(void)argc;
 	progname = argv[0];
@@ -156,7 +167,6 @@ int main(int argc, char **argv)
 		if (command == NULL)
 		    exit(0);
 
-		/* this is all handled in split_string
 		if (strlen(command) == 0)
 		{
 			free(command);
@@ -178,7 +188,7 @@ int main(int argc, char **argv)
 			free(command);
 			line_no++;
 			continue;
-		} */
+		}
 		
 		args = split_string(command);
 		
