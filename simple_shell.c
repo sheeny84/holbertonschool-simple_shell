@@ -75,7 +75,7 @@ void free_args(char **args)
 char **split_string(char *str)
 {
 	char **words_array;
-	char *word, *str_copy;
+	char *word, *str_copy, *copy_to_count;
 	int count, slot;
 	
 	slot = 0;
@@ -83,15 +83,25 @@ char **split_string(char *str)
 	if (str == NULL)
 		return (NULL);
 
-	str_copy = strdup(str);
-	if (str_copy == NULL)
+	copy_to_count = strdup(str);
+	if (copy_to_count == NULL)
 		return (NULL);
 
-	count = count_words(str_copy);
+	count = count_words(copy_to_count);
+	free(copy_to_count);
+	if (count == 0)
+		return (NULL);
 
 	words_array = malloc(sizeof(char *) * (count + 1));
 	if (words_array == NULL)
 		return (NULL);
+	
+	str_copy = strdup(str);
+	if(str_copy == NULL)
+	{
+		free(words_array);
+		return(NULL);
+	}
 	
 	word = strtok(str_copy, " ");
 	while (word != NULL)
@@ -106,9 +116,6 @@ char **split_string(char *str)
 		slot++;
 		word = strtok(NULL, " ");
 	}
-	/* count of 0 means line was empty or all spaces */
-	if (count == 0)
-		return (NULL);
 	words_array[slot] = NULL; /* add NULL to end of array */
 	free(str_copy);
 	return (words_array);
@@ -181,7 +188,6 @@ int main(int argc, char **argv)
 		} */
 		
 		args = split_string(command);
-		
 		if (args != NULL)
 		{
 			execute_command(args);
