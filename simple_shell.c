@@ -33,10 +33,15 @@ int main(int ac, char **av, char **env)
 			printf("($) ");
 		/* read a line in from stdin */
 		read = getline(&line, &len, stdin);
+		if (line == NULL)
+		{
+			free(line);
+			exit(0);
+		}
 		if (read == -1) /* unable to read line */
 		{
 			free(line);
-			exit(0); /* not a failure */
+			exit(1);
 		}
 		else /* i.e. read was successful */
 		{
