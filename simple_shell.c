@@ -1,78 +1,173 @@
 #include <stdio.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/wait.h>
 #include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/types.h>
 
-/**
- * main - simple shell that can run commands with their full path,
- * without any arguments
- * @ac: argument count
- * @av: array of arguments
- * @env: array of environment variables
- *
- * Return: Always 0.
- */
-int main(int ac, char **av, char **env)
+int line_no = 1;
+char *progname;
+
+char *read_input(void)
 {
-	char *line = NULL;
-	size_t len = 0;
-	ssize_t read;
-	pid_t child_pid;
-	char *argv[] = {"", NULL};
-	int status;
-	int interactive_mode; /* 1 for interactive mode, 0 for non-interactive */
-	int line_count = 1;
-	(void)ac;
-
-	interactive_mode = isatty(0);
-	while (1) /* infinite loop */
+	char *input_line;
+	size_t size;
+	ssize_t charsRead;
+	int mode;
+		
+    input_line = NULL;
+	size = 0;
+	mode = isatty(0);
+	
+	if (mode == 1)
 	{
-		/* print prompt in interactive mode */
-		if (interactive_mode)
-			printf("($) ");
-		/* read a line in from stdin */
-		read = getline(&line, &len, stdin);
-		if (line == NULL)
-		{
-			free(line);
-			exit(0);
-		}
-		if (read == -1) /* unable to read line */
-		{
-			free(line);
-			exit(1);
-		}
-		else /* i.e. read was successful */
-		{
-			/* replace new line with null byte */
-			if (line[read - 1] == '\n')
-				line[read - 1] = '\0';
-			argv[0] = line;
-		}
-		/* create child fork */
-		child_pid = fork();
-		if (child_pid == -1) /* error creating child */
-		{
-			free(line);
-			perror("fork"); /* not sure if we need this? */
-			exit(EXIT_FAILURE);
-		}
-		/* execute program if we are the child process */
-		if (child_pid == 0)
-		{
-			if (execve(argv[0], argv, env) == -1)
-			{
-				/* could not find file */
-				fprintf(stderr, "%s: %d: %s: not found\n",
-						av[0], line_count, argv[0]);
-				exit(127); /* error executing process */
-			}
-		}
-		else /* wait for child to complete */
-			wait(&status);
-		line_count++;
+	    printf("#cisfun$ ");
+	    fflush(stdout);
 	}
-	free(line);
+	   
+    charsRead = getline(&input_line, &size, stdin);
+        
+        if (charsRead == -1)
+		{
+			free(input_line);
+			return (NULL);
+		}
+
+    	if (charsRead > 0 && input_line[charsRead - 1] == '\n')
+		    input_line[charsRead - 1] = '\0';
+	
+return (input_line);
+}
+
+int count_words(char *str)
+{
+	int count;
+	char *words;
+	
+	count = 0;
+	
+	words = strtok(str, " ");
+	while (words != NULL)
+	{
+		count++;
+		words = strtok(NULL, " ");
+	}
+
+	return (count);
+}
+
+char **split_string(char *str)
+{
+	char **words_array;
+	char *word, *str_copy, *copy_to_count;
+	int count, slot, free_count;
+	
+	slot = 0, free_count = 0;
+
+	if (str == NULL)
+		return (NULL);
+
+	copy_to_count = strdup(str);
+	if (copy_to_count == NULL)
+		return (NULL);
+
+	count = count_words(copy_to_count);
+	free(copy_to_count);
+
+	words_array = malloc(sizeof(char *) * (count + 1));
+	if (words_array == NULL)
+		return (NULL);
+	
+	str_copy = strdup(str);
+	if (str_copy == NULL)
+	{
+		free(words_array);
+		return (NULL);
+	}
+
+	word = strtok(str_copy, " ");
+	while (word != NULL)
+	{
+		words_array[slot] = strdup(word);
+		if (words_array[slot] == NULL)
+		{
+			while (free_count < slot)
+			{
+				free(words_array[free_count]);
+				free_count++;
+			}
+			free(words_array);
+			free(str_copy);
+			return (NULL);
+		}
+		slot++;
+		word = strtok(NULL, " ");
+	}
+
+	words_array[slot] = NULL;
+	free(str_copy);
+	return (words_array);
+}
+
+void execute_command(char *command)
+{
+	pid_t child_pid;
+	int status;
+	char *args[2];
+	extern char **environ;
+
+	args[0] = command;
+	args[1] = NULL;
+
+	child_pid = fork();
+	if (child_pid == -1)
+	{
+		perror("fork");
+		exit(1);
+	}
+
+	if (child_pid == 0)
+	{
+		if (execve(command, args, environ) == -1)
+		{
+			fprintf(stderr, "%s: %d: %s: not found\n", progname, line_no, command);
+			exit(127);
+		}
+	}
+	else
+	{
+		wait(&status);
+	}
+}
+
+int main(int argc, char **argv)
+{
+	char *command;
+	char **args;
+	(void)argc;
+	progname = argv[0];
+
+	while (1)
+	{
+		command = read_input();
+		if (command == NULL)
+		    exit(0);
+
+		if (strlen(command) == 0)
+		{
+			free(command);
+			line_no++;
+			continue;
+		}
+		
+		args = split_string(command);
+		
+		if (args != NULL)
+		    execute_command(args[0]);
+		    
+		free(command);
+		line_no++;
+	}
+
 	return (0);
 }
