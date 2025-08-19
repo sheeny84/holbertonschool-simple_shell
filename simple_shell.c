@@ -162,6 +162,11 @@ int main(int argc, char **argv)
 	char **args;
 	(void)argc;
 	progname = argv[0];
+	int i = 0;
+	while (i < argc)
+	{
+		printf("arg	number is %d and string %s\n", argc, argv[i]);
+	}
 
 	while (1)
 	{
