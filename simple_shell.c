@@ -146,6 +146,17 @@ char *_getenv(const char *name)
     return (NULL);
 }
 
+void _printenv(void)
+{
+	extern char **environ;
+
+	while (*environ != NULL)
+	{
+		printf("%s\n", *environ);
+		environ++;
+	}
+}
+
 char *find_command_in_path(char *command)
 {
     char *path_env, *path_copy, *directory, *full_path;
@@ -272,6 +283,11 @@ int main(int argc, char **argv)
 				exit_code = exit_status[1];
 				free(exit_status);
 				exit(exit_code);
+			}
+			if (strcmp(args[0], "env") == 0)
+			{
+				_printenv();
+				continue;
 			}
 			exit_status = execute_command(args, exit_status);
 			free_args(args);
