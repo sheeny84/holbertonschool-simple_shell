@@ -206,7 +206,7 @@ int execute_command(char **args)
 	{
 		fprintf(stderr, "%s: %d: %s: not found\n", progname, line_no, args[0]);
 		free(executable_path);
-		return (127);
+		return (0);
 	}
 		child_pid = fork();
 	
@@ -253,7 +253,7 @@ int main(int argc, char **argv)
 		
 		if (args != NULL)
 		{
-			if (strcmp(args[0], "exit"))
+			if (strcmp(args[0], "exit") == 0)
 				exit(0);
 			status = execute_command(args);
 			free_args(args);
