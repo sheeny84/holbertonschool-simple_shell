@@ -5,6 +5,7 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <stddef.h>
+#include <errno.h>
 
 int line_no = 1;
 char *progname;
@@ -208,7 +209,7 @@ int execute_command(char **args)
 		free(executable_path);
 		return (0);
 	}
-		child_pid = fork();
+	child_pid = fork();
 	
 	if (child_pid == -1)
 	{
@@ -219,7 +220,7 @@ int execute_command(char **args)
 
 	if (child_pid == 0)
 	{
-		if (execve(executable_path, args, environ) == -1)
+		if (execve(executable_path, args, environ) == -1) 
 		{
 			fprintf(stderr, "%s: %d: %s: not found\n", progname, line_no, args[0]);
 			free(executable_path);
@@ -238,7 +239,7 @@ int main(int argc, char **argv)
 {
 	char *command;
 	char **args;
-	int status;
+	int status = 0;
 	
 	(void)argc;
 	progname = argv[0];
@@ -257,7 +258,7 @@ int main(int argc, char **argv)
 			{
 				free_args(args);
 				free(command);
-				exit(0);
+				exit(errno);
 			}
 			status = execute_command(args);
 			free_args(args);
