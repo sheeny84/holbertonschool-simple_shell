@@ -5,7 +5,7 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <stddef.h>
-#include <errno.h>
+#include <stdint.h>
 
 int line_no = 1;
 char *progname;
@@ -17,7 +17,7 @@ char *read_input(void)
 	ssize_t charsRead;
 	int mode;
 		
-    input_line = NULL;
+    	input_line = NULL;
 	size = 0;
 	mode = isatty(0);
 	
@@ -27,7 +27,7 @@ char *read_input(void)
 	    fflush(stdout);
 	}
 	   
-    charsRead = getline(&input_line, &size, stdin);
+    	charsRead = getline(&input_line, &size, stdin);
         
         if (charsRead == -1)
 		{
@@ -38,7 +38,7 @@ char *read_input(void)
     	if (charsRead > 0 && input_line[charsRead - 1] == '\n')
 		    input_line[charsRead - 1] = '\0';
 	
-return (input_line);
+	return (input_line);
 }
 
 int count_words(char *str)
@@ -194,20 +194,24 @@ char *find_command_in_path(char *command)
     return NULL;
 }
 
-int execute_command(char **args)
+int *execute_command(char **args)
 {
+	int *exit_status; /* parent and child exit status */
 	pid_t child_pid;
 	int status;
 	char *executable_path;
-	
 	extern char **environ;
-	
+
+	exit_status = malloc(sizeof(int) * 2);
+	exit_status[0] = 0;
+	exit_status[1] = 0;
+
 	executable_path = find_command_in_path(args[0]);
 	if (executable_path == NULL)
 	{
 		fprintf(stderr, "%s: %d: %s: not found\n", progname, line_no, args[0]);
 		free(executable_path);
-		return (0);
+		return (exit_status);
 	}
 	child_pid = fork();
 	
@@ -215,7 +219,8 @@ int execute_command(char **args)
 	{
 		perror("fork");
 		free(executable_path);
-		return (1);
+		exit_status[0] = 1; /* parent exit status is 1 */
+		return (exit_status);
 	}
 
 	if (child_pid == 0)
@@ -224,7 +229,8 @@ int execute_command(char **args)
 		{
 			fprintf(stderr, "%s: %d: %s: not found\n", progname, line_no, args[0]);
 			free(executable_path);
-			return (127);
+			exit_status[0] = 127; /* parent exit status is 127 */
+			return (exit_status);
 		}
 	}
 	else
@@ -232,17 +238,22 @@ int execute_command(char **args)
 		wait(&status);
 		free(executable_path);
 	}
-	return (0);
+	if (WIFEXITED(status))
+		exit_status[1] = WEXITSTATUS(status);
+	return (exit_status);
 }
 
 int main(int argc, char **argv)
 {
 	char *command;
 	char **args;
-	int status = 0;
+	int *exit_status;
 	
 	(void)argc;
 	progname = argv[0];
+	exit_status = malloc(sizeof(int) * 2);
+	exit_status[0] = 0;
+	exit_status[1] = 0;
 
 	while (1)
 	{
@@ -251,25 +262,24 @@ int main(int argc, char **argv)
 		    exit(0);
 
 		args = split_string(command);
-		
+
 		if (args != NULL)
 		{
 			if (strcmp(args[0], "exit") == 0)
 			{
 				free_args(args);
 				free(command);
-				exit(errno);
+				exit(exit_status[1]);
 			}
-			status = execute_command(args);
+			exit_status = execute_command(args);
 			free_args(args);
 		}
 		    
 		free(command);
-		if (status != 0)
-			exit(status);
+		if (exit_status[0] != 0)
+			exit(exit_status[0]);
 		line_no++;
 		}
 
 		return (0);
 }
-
