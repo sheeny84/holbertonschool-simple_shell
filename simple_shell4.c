@@ -254,7 +254,11 @@ int main(int argc, char **argv)
 		if (args != NULL)
 		{
 			if (strcmp(args[0], "exit") == 0)
+			{
+				free_args(args);
+				free(command);
 				exit(0);
+			}
 			status = execute_command(args);
 			free_args(args);
 		}
