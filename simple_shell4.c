@@ -194,17 +194,12 @@ char *find_command_in_path(char *command)
     return NULL;
 }
 
-int *execute_command(char **args)
+int *execute_command(char **args, int *exit_status)
 {
-	int *exit_status; /* parent and child exit status */
 	pid_t child_pid;
 	int status;
 	char *executable_path;
 	extern char **environ;
-
-	exit_status = malloc(sizeof(int) * 2);
-	exit_status[0] = 0;
-	exit_status[1] = 0;
 
 	executable_path = find_command_in_path(args[0]);
 	if (executable_path == NULL)
@@ -248,7 +243,8 @@ int main(int argc, char **argv)
 	char *command;
 	char **args;
 	int *exit_status;
-	
+	int exit_code;
+
 	(void)argc;
 	progname = argv[0];
 	exit_status = malloc(sizeof(int) * 2);
@@ -259,7 +255,10 @@ int main(int argc, char **argv)
 	{
 		command = read_input();
 		if (command == NULL)
-		    exit(0);
+		{
+			free(exit_status);
+			exit(0);
+		}
 
 		args = split_string(command);
 
@@ -269,17 +268,24 @@ int main(int argc, char **argv)
 			{
 				free_args(args);
 				free(command);
-				exit(exit_status[1]);
+				exit_code = exit_status[1];
+				free(exit_status);
+				exit(exit_code);
 			}
-			exit_status = execute_command(args);
+			exit_status = execute_command(args, exit_status);
 			free_args(args);
 		}
 		    
 		free(command);
 		if (exit_status[0] != 0)
-			exit(exit_status[0]);
+		{
+			exit_code = exit_status[0];
+                        free(exit_status);
+			exit(exit_code);
+		}
 		line_no++;
 		}
-
+		
+		free(exit_status);
 		return (0);
 }
