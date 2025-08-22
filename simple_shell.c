@@ -263,13 +263,16 @@ int main(int argc, char **argv)
 	exit_status[0] = 0;
 	exit_status[1] = 0;
 
+	setenv("PATH", "", 1);
+	_printenv();
 	while (1)
 	{
 		command = read_input();
 		if (command == NULL)
 		{
+			exit_code = exit_status[1];
 			free(exit_status);
-			exit(0);
+			exit(exit_code);
 		}
 
 		args = split_string(command);
@@ -301,9 +304,7 @@ int main(int argc, char **argv)
 			exit(exit_code);
 		}
 		line_no++;
-		}
+	}
 		
-		exit_code = exit_status[1];
-		free(exit_status);
-		return (exit_code);
+	return (exit_code);
 }
