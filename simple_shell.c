@@ -149,11 +149,12 @@ char *_getenv(const char *name)
 void _printenv(void)
 {
 	extern char **environ;
+	char **env_copy;
 
-	while (*environ != NULL)
+	while (*env_copy != NULL)
 	{
-		printf("%s\n", *environ);
-		environ++;
+		printf("%s\n", *env_copy);
+		env_copy++;
 	}
 }
 
@@ -263,8 +264,6 @@ int main(int argc, char **argv)
 	exit_status[0] = 0;
 	exit_status[1] = 0;
 
-	setenv("PATH", "", 1);
-	_printenv();
 	while (1)
 	{
 		command = read_input();
@@ -290,6 +289,8 @@ int main(int argc, char **argv)
 			if (strcmp(args[0], "env") == 0)
 			{
 				_printenv();
+				free_args(args);
+				free(command);
 				continue;
 			}
 			exit_status = execute_command(args, exit_status);
